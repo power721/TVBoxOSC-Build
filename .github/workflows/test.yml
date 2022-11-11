@@ -2,7 +2,7 @@ name: Test
 
 on:
   schedule:
-    - cron: 15,45 0-18,22-23 * * *
+    - cron: 30 8-23 * * *
   workflow_dispatch:
     inputs:
       rebuild:
@@ -27,9 +27,6 @@ jobs:
         include:
           - userName: power721
             repoName: TVBoxOS
-            branchName: main
-          - userName: takagen99
-            repoName: Box
             branchName: main
     steps:
       - name: Checkout
