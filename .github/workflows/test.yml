@@ -27,7 +27,7 @@ jobs:
         include:
           - userName: power721
             repoName: TVBoxOS
-            branchName: main
+            branchName: dev
     steps:
       - name: Checkout
         uses: actions/checkout@v3
