@@ -49,7 +49,7 @@ jobs:
           cd TVBoxOSC
           git checkout ${{ env.commit }}
           echo "tag=$(git log --date=format:'%Y%m%d-%H%M' --pretty=format:%cd ${{ env.commitS }} -1)" >> $GITHUB_ENV
-          zip -q -x ".git/*" -r source-${{ env.commitS }}.zip .
+          zip -q -x ".git/*" -r source-code-${{ env.commitS }}.zip .
       - name: Extra Modify
         if: ${{ env.commit }}
         working-directory: TVBoxOSC
@@ -135,7 +135,7 @@ jobs:
           removeArtifacts: true
           artifacts: |
             TVBoxOSC/apk/*.apk
-            TVBoxOSC/source-${{ env.commitS }}.zip
+            TVBoxOSC/source-code-${{ env.commitS }}.zip
       - name: Post To Telegram
         if: ${{ env.commit }}
         working-directory: TVBoxOSC
@@ -143,7 +143,7 @@ jobs:
           if [ -n "${{ secrets.CHANNEL_ID }}" ] && [ -n "${{ secrets.BOT_TOKEN }}" ]; then
             OUTPUT="${{ github.workspace }}/TVBoxOSC/apk/"
             export appRelease=$(find $OUTPUT -name "*${{ matrix.userName }}*.apk")
-            export sourceCode="${{ github.workspace }}/TVBoxOSC/source-${{ env.commitS }}.zip"
+            export sourceCode="${{ github.workspace }}/TVBoxOSC/source-code-${{ env.commitS }}.zip"
             count=$(wc -m apk/${{ matrix.userName }}-Release.log |cut -d ' ' -f1)
             echo $count
             if [ ${count} -eq 0 ] && [ ${count} -gt 1024 ]; then
