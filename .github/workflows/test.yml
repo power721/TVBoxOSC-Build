@@ -47,7 +47,7 @@ jobs:
         run: |
           git clone ${{ env.upStream }} TVBoxOSC
           cd TVBoxOSC
-          git checkout ${{ env.commit }}
+          git checkout ${{ matrix.branchName }}
           echo "tag=$(git log --date=format:'%Y%m%d-%H%M' --pretty=format:%cd ${{ env.commitS }} -1)" >> $GITHUB_ENV
           zip -q -x ".git/*" -r source-code-${{ env.commitS }}.zip .
       - name: Extra Modify
