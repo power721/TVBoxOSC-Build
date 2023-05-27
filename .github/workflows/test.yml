@@ -148,7 +148,7 @@ jobs:
             count=$(wc -m apk/${{ matrix.userName }}-Release.log |cut -d ' ' -f1)
             echo $count
             if [ ${count} -eq 0 ] && [ ${count} -gt 1024 ]; then
-              echo -e "Credit: ${{ matrix.userName }}/${{ matrix.repoName }}\nCommit: ${{ env.commit }}\nChangelog:\n${{ env.upStream }}/commits/${{ matrix.branchName }}" > apk/${{ matrix.userName }}-Release.log
+              echo -e "Credit: #${{ matrix.userName }}/${{ matrix.repoName }}\nCommit: ${{ env.commit }}\nChangelog:\n${{ env.upStream }}/commits/${{ matrix.branchName }}" > apk/${{ matrix.userName }}-Release.log
             fi
             ESCAPED=`python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$(cat apk/${{ matrix.userName }}-Release.log |sed -e '1s/: \(.*\)\/.*/: #\1/' -e 's#\([&"\/]\)#\\\\\1#g')"`
             #检查源码尺寸，太大则不上传
