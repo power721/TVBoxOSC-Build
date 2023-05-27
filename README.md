@@ -1,6 +1,6 @@
 # TVBoxOSC
 
-![Build](https://shields.io/github/workflow/status/power721/TVBoxOSC-Build/Test?logo=github&label=Build)
+![Build](https://img.shields.io/github/actions/workflow/status/power721/TVBoxOSC-Build/test.yml?branch=main)
 [![Channel](https://img.shields.io/badge/Follow-Telegram-blue.svg?logo=telegram)](https://t.me/PowerTvBox)
 [![Download](https://img.shields.io/github/v/release/power721/TVBoxOSC-Build?color=orange&logoColor=orange&label=Download&logo=DocuSign)](https://github.com/power721/TVBoxOSC-Build/releases/latest) 
 [![Total](https://shields.io/github/downloads/power721/TVBoxOSC-Build/total?logo=Bookmeter&label=Counts&logoColor=yellow&color=yellow)](https://github.com/power721/TVBoxOSC-Build/releases)
