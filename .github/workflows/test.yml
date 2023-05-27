@@ -47,7 +47,7 @@ jobs:
         run: |
           git clone ${{ env.upStream }} TVBoxOSC
           cd TVBoxOSC
-          git checkout ${{ env.commit }}
+          git checkout ${{ matrix.branchName }}
           echo "tag=$(git log --date=format:'%Y%m%d-%H%M' --pretty=format:%cd ${{ env.commitS }} -1)" >> $GITHUB_ENV
       - name: Extra Modify
         if: ${{ env.commit }}
@@ -56,6 +56,7 @@ jobs:
           echo '修改VersionName'
           sed -i "/versionName/s#[0-9a-zA-Z_\.\'\"-]\+\$#\'${{ env.tag }}\'#" app/build.gradle
           sed -i "/android:text=/s#=\"#=\"${{ env.tag }}\\\\n\\\\n#" app/src/main/res/layout/dialog_about.xml
+          sed -i "s/q215613905/power721/" app/src/main/res/layout/dialog_about.xml
           echo 'crosswalk源，防挂'
           if grep -q 'crosswalk' build.gradle; then
             sed -i "/crosswalk/a\        maven { url 'https://o0halflife0o.github.io/crosswalk/releases/crosswalk/android/maven2' }" build.gradle
@@ -67,7 +68,7 @@ jobs:
         working-directory: TVBoxOSC
         run: |
           #zip -q -x ".git/*" -x  ".github/*" -r source-${{ env.commitS }}.zip .
-          tar -cJf source-${{ env.commitS }}.tar.xz --exclude=.git --exclude=.github *
+          tar -cJf source-code-${{ env.commitS }}.tar.xz --exclude=.git --exclude=.github *
       - name: Option For Test
         if: ${{ inputs.testOption }}
         working-directory: TVBoxOSC
