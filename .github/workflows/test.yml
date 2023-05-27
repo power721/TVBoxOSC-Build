@@ -2,7 +2,7 @@ name: Test
 
 on:
   schedule:
-    - cron: '0,30 * * * *'
+    - cron: 30 * * * *
   workflow_dispatch:
     inputs:
       rebuild:
@@ -42,14 +42,13 @@ jobs:
             echo "commit=$commit" >> $GITHUB_ENV
             echo "commitS=${commit:0:7}" >> $GITHUB_ENV
           fi
-      - name: Checkout Source Code and Zip
+      - name: Checkout Source Code
         if: ${{ env.commit }}
         run: |
           git clone ${{ env.upStream }} TVBoxOSC
           cd TVBoxOSC
-          git checkout ${{ matrix.branchName }}
+          git checkout ${{ env.commit }}
           echo "tag=$(git log --date=format:'%Y%m%d-%H%M' --pretty=format:%cd ${{ env.commitS }} -1)" >> $GITHUB_ENV
-          zip -q -x ".git/*" -r source-code-${{ env.commitS }}.zip .
       - name: Extra Modify
         if: ${{ env.commit }}
         working-directory: TVBoxOSC
@@ -57,13 +56,18 @@ jobs:
           echo '修改VersionName'
           sed -i "/versionName/s#[0-9a-zA-Z_\.\'\"-]\+\$#\'${{ env.tag }}\'#" app/build.gradle
           sed -i "/android:text=/s#=\"#=\"${{ env.tag }}\\\\n\\\\n#" app/src/main/res/layout/dialog_about.xml
-          sed -i "s/q215613905/power721/" app/src/main/res/layout/dialog_about.xml
           echo 'crosswalk源，防挂'
           if grep -q 'crosswalk' build.gradle; then
             sed -i "/crosswalk/a\        maven { url 'https://o0halflife0o.github.io/crosswalk/releases/crosswalk/android/maven2' }" build.gradle
           else
             sed -i "/jitpack.io/a\        maven { url 'https://o0halflife0o.github.io/crosswalk/releases/crosswalk/android/maven2' }" build.gradle
           fi
+      - name: Compress Source Code
+        if: ${{ env.commit }}
+        working-directory: TVBoxOSC
+        run: |
+          #zip -q -x ".git/*" -x  ".github/*" -r source-${{ env.commitS }}.zip .
+          tar -cJf source-${{ env.commitS }}.tar.xz --exclude=.git --exclude=.github *
       - name: Option For Test
         if: ${{ inputs.testOption }}
         working-directory: TVBoxOSC
@@ -113,14 +117,15 @@ jobs:
           if [ "${{ env.commit }}" == "${lastCommit}" ]; then
             git log --pretty=format:%B ${{ env.commitS }} -1 |sed -e "s# \{2,\}#\n#g" -e "/^Merge \(pull\|branch\|remote\)/d" -e '/^$/d' |cat -n |sort -k2,2 -k1,1n |uniq -f1 |sort -k1,1n |cut -f2- >> apk/${{ matrix.userName }}-Release.log
           else
-            git log --pretty=format:%B ${lastCommit}... |sed -e "s# \{2,\}#\n#g" -e "/^Merge \(pull\|branch\|remote\)/d" -e '/^$/d' |cat -n |sort -k2,2 -k1,1n |uniq -f1 |sort -k1,1n |cut -f2- >> apk/${{ matrix.userName }}-Release.log
+            git log --pretty=format:%B ${{ env.commitS }}...${lastCommit:0:7} |sed -e "s# \{2,\}#\n#g" -e "/^Merge \(pull\|branch\|remote\)/d" -e '/^$/d' |cat -n |sort -k2,2 -k1,1n |uniq -f1 |sort -k1,1n |cut -f2- >> apk/${{ matrix.userName }}-Release.log
           fi
       - name: Upload App To Artifact
         uses: actions/upload-artifact@v3
         if: ${{ env.commit }}
         with:
           name: ${{ matrix.userName }}-${{ matrix.repoName }}
-          path: TVBoxOSC/apk/*
+          path: |
+            TVBoxOSC/apk/*
       - name: Whether Or Not to Publish
         if: ${{ inputs.donotpublish && env.commit }}
         run: |
@@ -136,21 +141,21 @@ jobs:
           removeArtifacts: true
           artifacts: |
             TVBoxOSC/apk/*.apk
-            TVBoxOSC/source-code-${{ env.commitS }}.zip
+            TVBoxOSC/source-code-${{ env.commitS }}.*
       - name: Post To Telegram
         if: ${{ env.commit }}
         working-directory: TVBoxOSC
         run: |
           if [ -n "${{ secrets.CHANNEL_ID }}" ] && [ -n "${{ secrets.BOT_TOKEN }}" ]; then
-            OUTPUT="${{ github.workspace }}/TVBoxOSC/apk/"
-            export appRelease=$(find $OUTPUT -name "*${{ matrix.userName }}*.apk")
-            export sourceCode="${{ github.workspace }}/TVBoxOSC/source-code-${{ env.commitS }}.zip"
-            count=$(wc -m apk/${{ matrix.userName }}-Release.log |cut -d ' ' -f1)
-            echo $count
-            if [ ${count} -eq 0 ] && [ ${count} -gt 1024 ]; then
-              echo -e "Credit: #${{ matrix.userName }}/${{ matrix.repoName }}\nCommit: ${{ env.commit }}\nChangelog:\n${{ env.upStream }}/commits/${{ matrix.branchName }}" > apk/${{ matrix.userName }}-Release.log
+            OUTPUT="${{ github.workspace }}/TVBoxOSC"
+            export appRelease=$(find $OUTPUT/apk/ -name "*${{ matrix.userName }}*.apk")
+            export sourceCode=$(find $OUTPUT -name "source-code-${{ env.commitS }}.*")
+            ESCAPED="$(sed -e '1s/\[\(.*\)\].*/#\1/' -e 's#\([&"\/]\)#\\\1#g' apk/${{ matrix.userName }}-Release.log)"
+            count=$(echo "$ESCAPED" |wc -m |cut -d ' ' -f1)
+            if [ ${count} -eq 1 ] || [ ${count} -gt 1024 ]; then
+              ESCAPED="$(echo -e "Credit: #${{ matrix.userName }}\nCommit: ${{ env.commit }}\nChangelog:\n${{ env.upStream }}/commits/${{ matrix.branchName }}")"
             fi
-            ESCAPED=`python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$(cat apk/${{ matrix.userName }}-Release.log |sed -e '1s/: \(.*\)\/.*/: #\1/' -e 's#\([&"\/]\)#\\\\\1#g')"`
+            ESCAPED=`python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$ESCAPED"`
             #检查源码尺寸，太大则不上传
             file_size=$(du -s ${sourceCode} | awk '{print $1}')
             #文件最大值，1024代表1M
